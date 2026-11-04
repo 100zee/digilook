@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>DIGILOOK · 디카룩</title>
+<meta name="theme-color" content="#1b1c1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="디카룩">
+<style>
+  :root{--body:#25262a;--body2:#1b1c1f;--line:#3a3b40;--text:#f1f1f3;--sub:#9d9ea6;--lime:#c9ff57;--stamp:#ff9b3d}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:radial-gradient(120% 80% at 50% 0%,#3a3c42 0%,#141518 70%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif}
+  button{font-family:inherit}
+  .device{max-width:460px;margin:0 auto;min-height:100vh;background:linear-gradient(180deg,#2c2d32,#202125 40%,#1b1c1f);padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:10px}
+  @media(min-width:520px){.device{min-height:auto;margin:24px auto;border-radius:34px;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.4);padding:16px 18px 22px}}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:2px 4px}
+  .logo{font:800 15px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:2px;color:#d9d9de}
+  .logo b{color:var(--lime)}
+  .pills{display:flex;gap:6px}
+  .pill{border:1px solid var(--line);background:#2a2b30;color:var(--sub);font-size:11.5px;padding:6px 10px;border-radius:999px;cursor:pointer}
+  .pill.on{color:#111;background:var(--lime);border-color:var(--lime);font-weight:700}
+  /* LCD */
+  .lcd{position:relative;border-radius:14px;background:#0b0c0d;padding:8px;box-shadow:inset 0 0 0 2px #111,inset 0 2px 8px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.06)}
+  .screen{position:relative;border-radius:8px;overflow:hidden;background:#050505;min-height:44vh;display:flex;align-items:center;justify-content:center;touch-action:none}
+  @media(min-width:520px){.screen{min-height:440px}}
+  .screen canvas{max-width:100%;max-height:48vh;display:block}
+  @media(min-width:520px){.screen canvas{max-height:520px}}
+  .osd{position:absolute;left:10px;right:10px;top:8px;display:flex;justify-content:space-between;pointer-events:none;font:700 11px/1 ui-monospace,Menlo,monospace;color:#e8ffe0;text-shadow:0 1px 2px #000;letter-spacing:.5px}
+  .osd span{background:rgba(0,0,0,.35);padding:3px 6px;border-radius:4px;margin-right:4px}
+  .empty{text-align:center;color:var(--sub);padding:36px 18px;line-height:1.7;font-size:13.5px}
+  .empty .cam{font-size:40px}
+  .empty label{display:inline-block;margin-top:12px;background:var(--lime);color:#111;padding:11px 22px;border-radius:999px;font-weight:800;cursor:pointer}
+  .marker{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 18px rgba(255,255,255,.6);pointer-events:none;display:none;transition:opacity .3s}
+  .marker::after{content:"⚡";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .badge{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.65);padding:4px 9px;border-radius:6px;font-size:11.5px;display:none}
+  .hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:6px 12px;border-radius:999px;font-size:11.5px;color:#ddd;white-space:nowrap;pointer-events:none}
+  .loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);font-size:13px}
+  /* intensity */
+  .inten{display:grid;grid-template-columns:1fr 40px;gap:10px;align-items:center;padding:14px 6px 0}
+  .slwrap{position:relative}
+  .bubble{position:absolute;top:-22px;transform:translateX(-50%);background:#3b3c42;color:#fff;font:700 11px/1 ui-monospace,Menlo,monospace;padding:4px 7px;border-radius:999px;pointer-events:none}
+  input[type=range]{width:100%;accent-color:var(--lime);height:22px}
+  .cmpbtn{height:34px;border-radius:10px;border:1px solid var(--line);background:#2a2b30;color:#ddd;font-size:15px;cursor:pointer;user-select:none;-webkit-user-select:none}
+  /* filter strip */
+  .strip{display:flex;gap:10px;overflow-x:auto;padding:4px 4px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+  .strip::-webkit-scrollbar{display:none}
+  .cam{flex:0 0 auto;width:66px;text-align:center;background:none;border:0;color:var(--sub);cursor:pointer;scroll-snap-align:center;padding:0}
+  .cam .ic{width:58px;height:46px;margin:0 auto 5px;border-radius:12px;background:#2c2d32;display:flex;align-items:center;justify-content:center;border:1.5px solid transparent}
+  .cam.on .ic{border-color:var(--lime);box-shadow:0 0 0 3px rgba(201,255,87,.15)}
+  .cam b{display:block;font:800 10.5px/1.15 ui-monospace,Menlo,monospace;color:#e6e6ea;letter-spacing:.3px}
+  .cam small{display:block;font-size:9.5px;margin-top:2px}
+  .cam.on b{color:var(--lime)}
+  .desc{font-size:12px;color:#cfcfd5;line-height:1.55;background:rgba(255,255,255,.04);border-radius:10px;padding:9px 11px;margin:0 2px}
+  .desc em{font-style:normal;color:var(--lime);font-weight:700}
+  /* tabs */
+  .tabs{display:flex;justify-content:space-around;border-top:1px solid #2f3035;padding-top:8px}
+  .tab{background:none;border:0;color:var(--sub);font-size:13px;padding:6px 8px;cursor:pointer;position:relative}
+  .tab.on{color:#fff;font-weight:800}
+  .tab.on::after{content:"";position:absolute;left:30%;right:30%;bottom:-2px;height:2px;border-radius:2px;background:var(--lime)}
+  .panel{min-height:60px}
+  .row{display:grid;grid-template-columns:92px 1fr 40px;align-items:center;gap:10px;margin:8px 2px;font-size:12.5px}
+  .row output{color:var(--sub);font:600 11.5px ui-monospace,Menlo,monospace;text-align:right}
+  .note{font-size:11.5px;color:var(--sub);line-height:1.6;margin:6px 2px}
+  .opts{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0}
+  .opts select,.opts input{background:#2a2b30;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12.5px}
+  .flashbig{display:flex;gap:8px;margin:4px 0 8px}
+  .flashbig button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:#2a2b30;color:#ddd;font-weight:700;cursor:pointer}
+  .flashbig button.on{background:#fff3b0;color:#111;border-color:#fff3b0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chips span{font:600 11px ui-monospace,Menlo,monospace;background:#2f3035;border-radius:999px;padding:5px 9px;color:#e6e6ea}
+  /* shutter row */
+  .shutter-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:6px;position:sticky;bottom:0;padding:12px 2px calc(env(safe-area-inset-bottom) + 6px);background:linear-gradient(180deg,rgba(27,28,31,0),#1b1c1f 35%);z-index:4}
+  .gal{justify-self:start;width:50px;height:50px;border-radius:12px;border:2px solid #45464c;background:#2a2b30 center/cover;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:20px}
+  .shutter{width:76px;height:76px;border-radius:50%;border:0;cursor:pointer;background:radial-gradient(circle at 35% 30%,#fafafa,#bdbfc4 45%,#8d8f95 70%,#5f6166);box-shadow:0 0 0 5px #141518,0 0 0 7px #3c3d42,0 8px 18px rgba(0,0,0,.6),inset 0 -3px 6px rgba(0,0,0,.35);color:#333;font:800 11px ui-monospace,Menlo,monospace;letter-spacing:1px}
+  .shutter:active{transform:scale(.96)}
+  .shutter:disabled{opacity:.45}
+  .flashq{justify-self:end;width:50px;height:50px;border-radius:50%;border:1px solid var(--line);background:#2a2b30;color:#888;font-size:20px;cursor:pointer}
+  .flashq.on{background:#fff3b0;color:#111}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#f1f1f3;color:#111;padding:9px 14px;border-radius:999px;font-size:12.5px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="top">
+    <div class="logo">DIGI<b>LOOK</b></div>
+    <div class="pills">
+      <button class="pill" id="pStamp">DATE</button>
+      <button class="pill" id="pCrop">4:3</button>
+    </div>
+  </div>
+
+  <div class="lcd">
+    <div class="screen" id="stage">
+      <div class="empty" id="empty">
+        <div class="cam">📷</div>
+        블로그·인스타 디카 인물 작례 <b style="color:#fff">1,200장</b>을 재서 만든<br>디카 색감으로 폰 사진을 바꿔줘요.<br>
+        <label for="file">사진 고르기</label>
+        <div class="note" style="margin-top:12px">사진은 서버로 안 올라가고 이 기기 안에서만 처리돼요.</div>
+      </div>
+      <canvas id="view" style="display:none"></canvas>
+      <div class="osd" id="osd" style="display:none"><div><span id="osdModel">IXUS</span><span id="osdFlash">⚡OFF</span></div><div><span id="osdRatio">FULL</span><span>▮▮▮</span></div></div>
+      <div class="marker" id="marker"></div>
+      <div class="badge" id="badge">원본</div>
+      <div class="hint" id="hint" style="display:none">플래시는 얼굴을 톡 눌러 위치를 정해요</div>
+      <div class="loading" id="loading">저장 중...</div>
+    </div>
+  </div>
+
+  <div class="inten">
+    <div class="slwrap"><div class="bubble" id="bubble">80</div><input type="range" id="strength" min="0" max="100" step="1" value="80" aria-label="색감 강도"></div>
+    <button class="cmpbtn" id="compare" title="누르고 있으면 원본">◧</button>
+  </div>
+
+  <div class="strip" id="strip"></div>
+  <div class="desc" id="desc"></div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="flash">플래시</button>
+    <button class="tab" data-t="adjust">조정</button>
+    <button class="tab" data-t="stamp">스탬프</button>
+    <button class="tab" data-t="recipe">레시피</button>
+  </div>
+  <div class="panel" id="panel"></div>
+
+  <div class="shutter-row">
+    <label class="gal" id="gal" for="file" title="사진 열기">＋</label>
+    <button class="shutter" id="save" disabled title="저장">SAVE</button>
+    <button class="flashq" id="flashq" title="플래시 켜기/끄기">⚡</button>
+  </div>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ===== 목표 색감 (CIELAB 중앙값) =====
+  // pct: 밝기 2/10/25/50/75/90/98 백분위 · bands: 그림자/중간/밝은 부분의 a,b,채도 C · skin: 피부 평균
+  const PROFILES = {
+    // 네이버 블로그 디카 인물 작례 351장 (73개 글)과 그 색감 유형
+    "all":{"pct":[4.82,12.54,25.94,47.51,65.68,77.21,90.46],"bands":[{"a":1.92,"b":3.26,"C":7.6},{"a":2.97,"b":8.13,"C":14.74},{"a":1.35,"b":4.86,"C":9.65}],"skin":{"L":58.12,"a":8.87,"b":13.36,"C":17.37}},
+    "c0":{"pct":[4.01,10.99,25.33,47.94,66.48,78.38,90.94],"bands":[{"a":1.5,"b":1.64,"C":5.87},{"a":2.58,"b":4.61,"C":10.69},{"a":1.11,"b":2.63,"C":6.97}],"skin":{"L":58.27,"a":8.84,"b":11.67,"C":15.64}},
+    "c1":{"pct":[5.42,13.42,25.14,45.93,61.68,72.05,85.29],"bands":[{"a":8.99,"b":10.1,"C":14.63},{"a":13.08,"b":22.68,"C":29.42},{"a":3.83,"b":18.47,"C":21.36}],"skin":{"L":56.53,"a":11.57,"b":22.2,"C":25.49}},
+    "c2":{"pct":[8.22,23.4,38.1,54.07,70.79,85.16,91.92],"bands":[{"a":6.04,"b":-7.16,"C":12.08},{"a":8.47,"b":-7.6,"C":23.74},{"a":0.33,"b":-5.52,"C":11.84}],"skin":{"L":60.3,"a":10.15,"b":1.47,"C":15.49}},
+    "c3":{"pct":[5.38,13.96,25.94,46.13,64.61,77.06,91.96],"bands":[{"a":1.83,"b":6.68,"C":9.38},{"a":1.87,"b":13.97,"C":18.19},{"a":1.25,"b":9.07,"C":12.97}],"skin":{"L":58.88,"a":7.6,"b":16.92,"C":19.47}},
+    // 사진정보(EXIF)로 플래시 발광이 확인된 디카 인물 57장
+    "flash":{"pct":[5.09,21.79,37.23,55.15,69.9,79.27,89.95],"bands":[{"a":1.01,"b":4.77,"C":7.16},{"a":1.3,"b":9.98,"C":12.35},{"a":0.58,"b":5.57,"C":7.98}],"skin":{"L":58.52,"a":6.62,"b":15.75,"C":17.61}},
+    // 사진정보로 확인된 캐논 EOS R/R5/R6 + 50mm F1.2~2.2 인물 22장
+    "canon":{"pct":[4.68,9.99,28.67,39.35,58.91,86.08,92.38],"bands":[{"a":2.47,"b":4.21,"C":10.56},{"a":5.88,"b":10.95,"C":18.43},{"a":1.25,"b":3.06,"C":6.16}],"skin":{"L":60.6,"a":10.4,"b":15.69,"C":19.48}},
+    // 인스타그램 디카 인물 849장 (236개 게시물, 186개 계정)과 캡션에 기종이 하나만 적힌 게시물의 기종별 값
+    "ig":{"pct":[3.48,10.7,23.97,47.24,67.41,82.16,94.77],"bands":[{"a":1.97,"b":2.62,"C":6.87},{"a":3.09,"b":6.93,"C":12.84},{"a":0.99,"b":4.19,"C":8.64}],"skin":{"L":59.04,"a":8.58,"b":12.56,"C":16.81}},
+    "ixus":{"pct":[3.97,11.67,23.28,46.18,66.52,81.08,93.1],"bands":[{"a":1.97,"b":2.82,"C":6.45},{"a":2.59,"b":7.27,"C":12.5},{"a":1.31,"b":5.73,"C":8.56}],"skin":{"L":61.29,"a":8.62,"b":13.83,"C":17.45}},
+    "exilim":{"pct":[8.69,19.01,34.83,58.65,75.6,87.68,98.02],"bands":[{"a":1.33,"b":3.86,"C":6.77},{"a":2.05,"b":7.7,"C":12.79},{"a":0.08,"b":3.75,"C":7.59}],"skin":{"L":61.29,"a":7.44,"b":11.37,"C":14.56}},
+    "coolpix":{"pct":[3.76,8.77,20.38,45,65.15,87.09,96.52],"bands":[{"a":1.02,"b":3.19,"C":6.26},{"a":1.8,"b":9.7,"C":13.68},{"a":-0.67,"b":5.64,"C":7.09}],"skin":{"L":57.9,"a":6.38,"b":16.24,"C":18.56}}
+  };
+
+  const COMMON = {strength:.8, skin:.8, flash:0, radius:.5, bg:0, blow:.3, glow:.25, mist:0, temp:0, sat:0, ev:0, sharp:.4, grain:.2, vig:.15, bokeh:0, toneW:1};
+  // body: 아이콘 몸체 색
+  const LOOKS = {
+    ixus:   {code:'IXUS', n:'인스타 117장', body:'#d9dbe0', profile:'ixus', blow:.35, glow:.3, grain:.2, vig:.15,
+             desc:'인스타에서 캡션에 <em>익서스</em>라고 적힌 인물 117장(33개 게시물) 평균이에요. 하이라이트가 하얗게 뜨고 피부가 밝게(61) 나와요.'},
+    exz:    {code:'EX-Z', n:'인스타 41장', body:'#e7b9c6', profile:'exilim', blow:.45, glow:.4, grain:.18, vig:.12,
+             desc:'<em>엑슬림</em> 인물 41장(15개 게시물) 평균이에요. 전체가 제일 밝고 그림자가 들떠서 뽀얀 느낌이고, 피부 채도가 가장 낮아요.'},
+    coolpix:{code:'COOLPIX', n:'인스타 30장', body:'#3b3d44', profile:'coolpix', blow:.4, glow:.25, grain:.22, vig:.18,
+             desc:'<em>쿨픽스</em> 인물 30장(8개 게시물) 평균이에요. 대비가 세고 하이라이트가 날아가며, 피부에 노란기가 조금 더 남아요. 표본이 적어서 참고용이에요.'},
+    glow:   {code:"00s GLOW", n:'인기 필터풍', body:'#fff1a8', profile:'ig', blow:.55, glow:.75, mist:.35, grain:.2, vig:.1, flash:.3,
+             desc:'카메라 앱 소개 게시물에서 가장 많이 나온 SODA <em>00s Glow</em>, Foodie <em>KOD-E</em> 같은 느낌이에요. 색은 인스타 디카 849장 평균으로 맞추고, 하이라이트 번짐과 뿌연 안개를 세게 넣어요.'},
+    c0:     {code:'CCD COOL', n:'블로그 191장', body:'#a9c4d8', profile:'c0', blow:.35, glow:.25, grain:.22, vig:.18,
+             desc:'블로그 작례 351장 중 191장이 이 색감이에요. 채도를 낮추고 노란기를 빼서 피부가 하얗고 차분해요. 연예인 디카 사진의 대표 느낌이에요.'},
+    flash:  {code:'FLASH', n:'EXIF 57장', body:'#f4f4f4', profile:'flash', flash:.5, bg:.3, blow:.3, glow:.3, grain:.22, vig:.18,
+             desc:'사진정보로 <em>플래시가 실제로 터진 게 확인된</em> 디카 인물 57장 기준이에요. 그림자가 크게 들뜨고 대비가 낮아지며 피부가 밝아져요.'},
+    igavg:  {code:'IG AVG', n:'인스타 849장', body:'#c7b8f0', profile:'ig', blow:.35, glow:.3, grain:.2, vig:.15,
+             desc:'인스타 디카 인물 849장(186개 계정) 전체 평균이에요. 블로그 평균보다 밝은 부분이 더 밝고(90%지점 77→82) 덜 노래요.'},
+    c3:     {code:'NATURAL', n:'블로그 100장', body:'#cfe3b8', profile:'c3', blow:.3, glow:.2, grain:.16,
+             desc:'맑은 낮 디카 느낌이에요(100장). 폰보다 중간톤을 살짝 눌러 대비가 있고 피부는 덜 노랗게 나와요.'},
+    c1:     {code:'WARM FL', n:'블로그 47장', body:'#e9a56d', profile:'c1', flash:.35, bg:.4, blow:.45, glow:.4, grain:.26, vig:.22,
+             desc:'실내 조명이나 플래시 아래 찍은 노랗고 진한 색감이에요(47장). 얼굴은 밝히고 배경은 어둡게 떨어뜨려요.'},
+    c2:     {code:'BLUE PK', n:'블로그 13장', body:'#a8b5ff', profile:'c2', flash:.25, blow:.6, glow:.45, grain:.2,
+             desc:'화이트밸런스가 푸른-분홍으로 틀어진 몽환적인 톤이에요(13장). 그림자가 들뜨고 하이라이트가 많이 날아가요.'},
+    canon:  {code:'R5 50mm', n:'EXIF 22장', body:'#1d1d1f', profile:'canon', strength:.6, skin:.6, toneW:.45, blow:.12, glow:.1, grain:.03, sharp:.3, vig:.22, bokeh:.45,
+             desc:'쓰레드에서 유행한 "Canon EOS R5 Mark II + RF 50mm F1.8" 느낌을 AI 없이 흉내 내요. 캐논 R 계열 + 50mm 인물 22장 색감에 노이즈 없이, 인물만 남기고 배경을 흐려요. 표본이 적어서 참고용이에요.'},
+    none:   {code:'NONE', n:'효과만', body:'#55565c', profile:null, strength:0, skin:0, flash:.5, bg:.25, blow:.25,
+             desc:'색은 그대로 두고 플래시, 노이즈, 날짜 같은 디카 효과만 넣어요.'},
+  };
+  const TAB_SLIDERS = {
+    flash: [['flash','플래시 세기',0,1],['radius','플래시 범위',.2,1],['bg','배경 어둡게',0,1],['bokeh','배경 흐림 F1.8',0,1]],
+    adjust:[['ev','노출 (EV)',-1,1],['temp','색온도',-1,1],['sat','채도',-.5,.5],['blow','하이라이트',0,1],['glow','빛 번짐',0,1],['mist','뿌연 안개',0,1],['grain','노이즈',0,1],['sharp','선명도',0,1],['vig','비네팅',0,1],['skin','피부톤 맞추기',0,1]],
+  };
+  const fmtVal = (k,v) => k==='ev' ? (v*2>=0?'+':'')+(v*2).toFixed(1) : k==='temp' ? (v>=0?'+':'')+Math.round(v*100) : String(Math.round(v*100));
+
+  const $ = id => document.getElementById(id);
+  const view=$('view'), vctx=view.getContext('2d',{willReadFrequently:true});
+  let lookKey='ixus', params={...COMMON,...LOOKS.ixus};
+  let center={x:.5,y:.38};
+  let opts={stamp:false, crop:false, soft:false, stampColor:'orange', stampFmt:'slash', stampRot:false};
+  let srcImg=null, previewSrc=null, fastSrc=null, previewOut=null, inStats=null, showingOriginal=false, curTab='flash';
+  const toast=t=>{ const el=$('toast'); el.textContent=t; el.style.opacity=1; clearTimeout(toast._t); toast._t=setTimeout(()=>el.style.opacity=0,1600); };
+
+  // ---------- filter strip ----------
+  const camSvg = (body) => `<svg width="40" height="30" viewBox="0 0 40 30"><rect x="1" y="4" width="38" height="25" rx="5" fill="${body}" stroke="rgba(0,0,0,.35)"/><rect x="5" y="1" width="9" height="5" rx="1.5" fill="${body}" stroke="rgba(0,0,0,.3)"/><circle cx="24" cy="16.5" r="8" fill="#1a1a1c"/><circle cx="24" cy="16.5" r="5" fill="#3d4a5a"/><circle cx="22.3" cy="14.8" r="1.6" fill="#cfe3ff"/><rect x="5" y="9" width="7" height="4" rx="1" fill="rgba(255,255,255,.75)"/></svg>`;
+  const strip=$('strip');
+  for(const [k,L] of Object.entries(LOOKS)){
+    const b=document.createElement('button'); b.className='cam'+(k===lookKey?' on':''); b.dataset.k=k;
+    b.innerHTML=`<div class="ic">${camSvg(L.body)}</div><b>${L.code}</b><small>${L.n}</small>`;
+    b.onclick=()=>selectLook(k); strip.appendChild(b);
+  }
+  function selectLook(k, keepParams){
+    lookKey=k; if(!keepParams) params={...COMMON,...LOOKS[k]};
+    [...strip.children].forEach(c=>c.classList.toggle('on',c.dataset.k===k));
+    $('desc').innerHTML=LOOKS[k].desc; syncAll(); schedule();
+  }
+
+  // ---------- intensity ----------
+  const st=$('strength');
+  function syncStrength(){ st.value=Math.round(params.strength*100); const pct=st.value/100; $('bubble').textContent=st.value; $('bubble').style.left=`calc(${pct*100}% + ${(0.5-pct)*16}px)`; }
+  st.oninput=()=>{ params.strength=st.value/100; syncStrength(); schedule(true); };
+
+  // ---------- tabs ----------
+  const panel=$('panel'), slInputs={};
+  function renderTab(){
+    panel.innerHTML=''; for(const k in slInputs) delete slInputs[k];
+    if(curTab==='flash'){
+      const fb=document.createElement('div'); fb.className='flashbig';
+      fb.innerHTML=`<button id="fOff">⚡ OFF</button><button id="fOn">⚡ ON</button>`; panel.appendChild(fb);
+      fb.querySelector('#fOff').onclick=()=>{ params.flash=0; syncAll(); schedule(); };
+      fb.querySelector('#fOn').onclick=()=>{ params.flash=params.flash>0?params.flash:.5; syncAll(); schedule(); };
+    }
+    if(TAB_SLIDERS[curTab]) for(const [key,label,min,max] of TAB_SLIDERS[curTab]){
+      const row=document.createElement('div'); row.className='row';
+      row.innerHTML=`<span>${label}</span><input type="range" min="${min}" max="${max}" step="0.01"><output></output>`;
+      const inp=row.querySelector('input'), out=row.querySelector('output');
+      inp.oninput=()=>{ params[key]=+inp.value; out.textContent=fmtVal(key,+inp.value); if(key==='flash') syncFlashUI(); schedule(true); };
+      slInputs[key]=[inp,out]; panel.appendChild(row);
+    }
+    if(curTab==='flash'){ const n=document.createElement('div'); n.className='note'; n.id='bokehStatus'; n.textContent=bokehMsg||'플래시를 켜면 실제 플래시 디카 작례(57장)처럼 그림자가 들뜨고 얼굴이 밝아져요. 배경 흐림은 사람을 인식해서 배경만 흐려요.'; panel.appendChild(n); }
+    if(curTab==='stamp'){
+      panel.insertAdjacentHTML('beforeend',`
+        <div class="opts"><button class="pill ${opts.stamp?'on':''}" id="sOn">날짜 스탬프 ${opts.stamp?'ON':'OFF'}</button>
+          <button class="pill ${opts.stampColor==='orange'?'on':''}" data-c="orange">주황</button><button class="pill ${opts.stampColor==='yellow'?'on':''}" data-c="yellow">노랑</button>
+          <button class="pill ${opts.stampRot?'on':''}" id="sRot">세로로 찍기</button></div>
+        <div class="opts"><input type="date" id="dateIn" value="${dateVal}">
+          <select id="dateFmt"><option value="slash">2026/11/04</option><option value="quote">'26 11 04</option><option value="dot">2026.11.04</option><option value="time">2026/11/04 21:30</option></select></div>
+        <div class="opts"><button class="pill ${opts.crop?'on':''}" id="sCrop">4:3 디카 비율</button><button class="pill ${opts.soft?'on':''}" id="sSoft">저화질 디카</button></div>
+        <div class="note">날짜는 사진 파일의 날짜로 자동으로 맞춰져요. Foodie처럼 세로 사진에 세로로 찍을 수도 있어요.</div>`);
+      $('dateFmt').value=opts.stampFmt;
+      $('sOn').onclick=()=>{opts.stamp=!opts.stamp; syncPills(); renderTab(); schedule();};
+      panel.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{opts.stampColor=b.dataset.c; opts.stamp=true; syncPills(); renderTab(); schedule();});
+      $('sRot').onclick=()=>{opts.stampRot=!opts.stampRot; opts.stamp=true; syncPills(); renderTab(); schedule();};
+      $('sCrop').onclick=()=>{opts.crop=!opts.crop; syncPills(); buildPreviewSrc(); renderTab(); schedule();};
+      $('sSoft').onclick=()=>{opts.soft=!opts.soft; renderTab(); schedule();};
+      $('dateIn').oninput=e=>{dateVal=e.target.value; schedule();}; $('dateFmt').oninput=e=>{opts.stampFmt=e.target.value; schedule();};
+    }
+    if(curTab==='recipe'){
+      const L=LOOKS[lookKey]; const chips=[L.code, '강도 '+Math.round(params.strength*100)];
+      if(params.flash>0) chips.push('⚡ '+Math.round(params.flash*100)); if(params.bokeh>0) chips.push('배경흐림 '+Math.round(params.bokeh*100));
+      if(params.ev) chips.push('EV '+fmtVal('ev',params.ev)); if(params.temp) chips.push('색온도 '+fmtVal('temp',params.temp));
+      chips.push('번짐 '+Math.round(params.glow*100), '노이즈 '+Math.round(params.grain*100)); if(opts.stamp) chips.push('DATE');
+      panel.insertAdjacentHTML('beforeend',`<div class="chips">${chips.map(c=>`<span>${c}</span>`).join('')}</div>
+        <div class="opts"><button class="pill on" id="rCopy">레시피 링크 복사</button><button class="pill" id="rReset">이 필터 기본값으로</button></div>
+        <div class="note">링크를 친구한테 보내면 같은 설정으로 열려요. 사진은 링크에 안 들어가요.</div>`);
+      $('rCopy').onclick=async()=>{ const url=location.href.split('#')[0]+'#r='+encodeRecipe(); try{ await navigator.clipboard.writeText(url); toast('레시피 링크 복사됨'); }catch{ prompt('이 링크를 복사하세요', url); } };
+      $('rReset').onclick=()=>{ selectLook(lookKey); };
+    }
+    syncAll();
+  }
+  $('tabs').querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ curTab=t.dataset.t; $('tabs').querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t)); renderTab(); });
+
+  function syncFlashUI(){ const on=params.flash>0; $('flashq').classList.toggle('on',on); $('osdFlash').textContent=on?'⚡ON':'⚡OFF';
+    const fOn=$('fOn'), fOff=$('fOff'); if(fOn){ fOn.classList.toggle('on',on); fOff.classList.toggle('on',!on); } }
+  function syncPills(){ $('pStamp').classList.toggle('on',opts.stamp); $('pCrop').classList.toggle('on',opts.crop); $('osdRatio').textContent=opts.crop?'4:3':'FULL'; }
+  function syncAll(){ for(const k in slInputs){ slInputs[k][0].value=params[k]; slInputs[k][1].textContent=fmtVal(k,params[k]); } syncStrength(); syncFlashUI(); syncPills(); $('osdModel').textContent=LOOKS[lookKey].code; }
+  $('flashq').onclick=()=>{ params.flash=params.flash>0?0:(LOOKS[lookKey].flash||.5); syncAll(); schedule(); toast(params.flash>0?'플래시 ON':'플래시 OFF'); };
+  $('pStamp').onclick=()=>{ opts.stamp=!opts.stamp; syncPills(); if(curTab==='stamp') renderTab(); schedule(); };
+  $('pCrop').onclick=()=>{ opts.crop=!opts.crop; syncPills(); buildPreviewSrc(); if(curTab==='stamp') renderTab(); schedule(); };
+
+  // ---------- recipe link ----------
+  const RKEYS=['strength','skin','flash','radius','bg','blow','glow','mist','temp','sat','ev','sharp','grain','vig','bokeh'];
+  function encodeRecipe(){ const o={l:lookKey,p:RKEYS.map(k=>Math.round(params[k]*100)),s:[opts.stamp?1:0,opts.crop?1:0,opts.soft?1:0,opts.stampColor==='yellow'?1:0,opts.stampRot?1:0],f:opts.stampFmt};
+    return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function loadRecipe(){ const m=location.hash.match(/r=([\w-]+)/); if(!m) return; try{ const o=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
+      if(!LOOKS[o.l]) return; params={...COMMON,...LOOKS[o.l]}; RKEYS.forEach((k,i)=>{ if(typeof o.p[i]==='number') params[k]=o.p[i]/100; });
+      [opts.stamp,opts.crop,opts.soft]=o.s.slice(0,3).map(Boolean); opts.stampColor=o.s[3]?'yellow':'orange'; opts.stampRot=!!o.s[4]; opts.stampFmt=o.f||'slash';
+      selectLook(o.l,true); toast('레시피를 불러왔어요'); }catch(e){} }
+
+  // ---------- file ----------
+  let dateVal=new Date().toISOString().slice(0,10);
+  $('file').onchange=e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=''; };
+  const stage=$('stage');
+  stage.addEventListener('dragover',e=>e.preventDefault());
+  stage.addEventListener('drop',e=>{e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) loadFile(f);});
+  function loadFile(f){
+    const img=new Image();
+    img.onload=()=>{ srcImg=img;
+      if(f.lastModified){ const d=new Date(f.lastModified); dateVal=new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+      center={x:.5,y:.38};
+      $('empty').style.display='none'; view.style.display='block'; $('osd').style.display='flex'; $('save').disabled=false;
+      $('gal').style.backgroundImage=`url(${img.src})`; $('gal').textContent='';
+      $('hint').style.display='block'; setTimeout(()=>{$('hint').style.display='none'},4000);
+      buildPreviewSrc(); if(curTab==='stamp') renderTab(); schedule(); };
+    img.onerror=()=>alert('이 사진 형식은 열 수 없어요. (HEIC면 JPG로 바꿔서 열어주세요)');
+    img.src=URL.createObjectURL(f);
+  }
+  function cropRect(w,h){ if(!opts.crop) return {sx:0,sy:0,sw:w,sh:h}; const t=w>=h?4/3:3/4, r=w/h;
+    if(r>t){const sw=h*t; return {sx:(w-sw)/2,sy:0,sw,sh:h};} const sh=w/t; return {sx:0,sy:(h-sh)/2,sw:w,sh}; }
+  function makeSrcCanvas(maxSide){ const w=srcImg.naturalWidth,h=srcImg.naturalHeight,c=cropRect(w,h); const s=Math.min(1,maxSide/Math.max(c.sw,c.sh));
+    const cv=document.createElement('canvas'); cv.width=Math.round(c.sw*s); cv.height=Math.round(c.sh*s); const x=cv.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(srcImg,c.sx,c.sy,c.sw,c.sh,0,0,cv.width,cv.height); return cv; }
+  function buildPreviewSrc(){ if(!srcImg) return; previewSrc=makeSrcCanvas(1080); fastSrc=makeSrcCanvas(560); view.width=previewSrc.width; view.height=previewSrc.height; inStats=computeStats(makeSrcCanvas(256)); lutCache.key=null; maskCanvas=null; segFailed=false; setBokehStatus(''); }
+
+  function placeMarker(){ const r=view.getBoundingClientRect(), sr=stage.getBoundingClientRect(), m=$('marker');
+    m.style.display=srcImg&&params.flash>0?'block':'none'; m.style.left=(r.left-sr.left+center.x*r.width)+'px'; m.style.top=(r.top-sr.top+center.y*r.height)+'px'; }
+  let mt; view.addEventListener('pointerdown',e=>{ const r=view.getBoundingClientRect();
+    center={x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))};
+    schedule(); placeMarker(); $('marker').style.opacity=1; clearTimeout(mt); mt=setTimeout(()=>{$('marker').style.opacity=.35},1500); });
+  window.addEventListener('resize',placeMarker);
+  const cmp=$('compare');
+  const showOrig=on=>{ if(!previewSrc) return; showingOriginal=on; $('badge').style.display=on?'block':'none'; if(on) vctx.drawImage(previewSrc,0,0); else if(previewOut) vctx.putImageData(previewOut,0,0); };
+  cmp.addEventListener('pointerdown',e=>{e.preventDefault(); showOrig(true);});
+  ['pointerup','pointerleave','pointercancel'].forEach(t=>cmp.addEventListener(t,()=>showOrig(false)));
+
+  let pending=false, pendingFast=false, fullTimer=null;
+  function schedule(fast){ if(!srcImg) return; clearTimeout(fullTimer);
+    if(fast){ if(!pendingFast){ pendingFast=true; requestAnimationFrame(()=>{ pendingFast=false; const o=processImage(fastSrc,params,center,opts); if(!showingOriginal){ vctx.imageSmoothingQuality='high'; vctx.drawImage(o,0,0,view.width,view.height);} placeMarker(); }); }
+      fullTimer=setTimeout(()=>schedule(false),280); return; }
+    if(pending) return; pending=true; requestAnimationFrame(()=>{pending=false; renderPreview();}); }
+  function renderPreview(){ if(!previewSrc) return; if(params.bokeh>0 && !maskCanvas && !segFailed && !segBusy) buildMask(); const out=processImage(previewSrc,params,center,opts); previewOut=out.getContext('2d').getImageData(0,0,out.width,out.height); if(!showingOriginal) vctx.putImageData(previewOut,0,0); placeMarker(); }
+
+  // ---------- color science ----------
+  const toLin=new Float32Array(256); for(let i=0;i<256;i++){const v=i/255; toLin[i]=v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);}
+  const LUTN=4096, toSrgb=new Uint8ClampedArray(LUTN+1); for(let i=0;i<=LUTN;i++){const v=i/LUTN; toSrgb[i]=Math.round(255*(v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055));}
+  const fLab=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;
+  const fInv=t=>{const t3=t*t*t; return t3>0.008856?t3:(t-16/116)/7.787;};
+  function rgb2lab(R,G,B){ const r=toLin[R|0],g=toLin[G|0],b=toLin[B|0]; return rgbf2lab(r,g,b); }
+  function rgbf2lab(r,g,b){ const X=(0.4124*r+0.3576*g+0.1805*b)/0.95047, Y=0.2126*r+0.7152*g+0.0722*b, Z=(0.0193*r+0.1192*g+0.9505*b)/1.08883;
+    const fx=fLab(X),fy=fLab(Y),fz=fLab(Z); return [116*fy-16, 500*(fx-fy), 200*(fy-fz)]; }
+  function lab2rgb(L,a,b){ const fy=(L+16)/116, fx=fy+a/500, fz=fy-b/200; const X=fInv(fx)*0.95047, Y=fInv(fy), Z=fInv(fz)*1.08883;
+    const r=3.2406*X-1.5372*Y-0.4986*Z, g=-0.9689*X+1.8758*Y+0.0415*Z, bb=0.0557*X-0.2040*Y+1.0570*Z;
+    const enc=v=>{v=v<0?0:v>1?1:v; return toSrgb[(v*LUTN)|0];}; return [enc(r),enc(g),enc(bb)]; }
+
+  // 사진의 현재 색 상태 측정 (작례 분석과 같은 방식)
+  function computeStats(cv){
+    const w=cv.width,h=cv.height,d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+    const Ls=[], bands=[0,1,2].map(()=>({n:0,a:0,b:0,C:0})), skin={n:0,L:0,a:0,b:0,C:0};
+    for(let i=0;i<d.length;i+=4){ const R=d[i],G=d[i+1],B=d[i+2]; const [L,A,Bb]=rgb2lab(R,G,B); const C=Math.hypot(A,Bb); Ls.push(L);
+      const bd=bands[L<35?0:L<70?1:2]; bd.n++; bd.a+=A; bd.b+=Bb; bd.C+=C;
+      const Cb=128-0.168736*R-0.331264*G+0.5*B, Cr=128+0.5*R-0.418688*G-0.081312*B;
+      if(Cr>135&&Cr<180&&Cb>85&&Cb<135&&R>G&&R>B&&L>30&&L<95&&(R-G)>8){skin.n++; skin.L+=L; skin.a+=A; skin.b+=Bb; skin.C+=C;} }
+    Ls.sort((p,q)=>p-q); const pct=[0.02,0.1,0.25,0.5,0.75,0.9,0.98].map(q=>Ls[Math.floor(q*(Ls.length-1))]);
+    for(const bd of bands){ if(bd.n){bd.a/=bd.n; bd.b/=bd.n; bd.C/=bd.n;} }
+    if(skin.n){skin.L/=skin.n; skin.a/=skin.n; skin.b/=skin.n; skin.C/=skin.n;}
+    skin.frac=skin.n/(w*h); return {pct,bands,skin};
+  }
+
+  function monoCurve(xs,ys){ const n=xs.length, m=new Array(n), dx=[], dy=[], s=[];
+    for(let i=0;i<n-1;i++){dx[i]=xs[i+1]-xs[i]; dy[i]=ys[i+1]-ys[i]; s[i]=dy[i]/dx[i];}
+    m[0]=s[0]; m[n-1]=s[n-2]; for(let i=1;i<n-1;i++){ m[i]=(s[i-1]*s[i]<=0)?0:(s[i-1]+s[i])/2; }
+    for(let i=0;i<n-1;i++){ if(s[i]===0){m[i]=m[i+1]=0; continue;} const a=m[i]/s[i], b=m[i+1]/s[i], t=a*a+b*b; if(t>9){const k=3/Math.sqrt(t); m[i]=k*a*s[i]; m[i+1]=k*b*s[i];} }
+    const tbl=new Float32Array(1001);
+    for(let j=0;j<=1000;j++){ const x=j/10; let i=0; while(i<n-2&&x>xs[i+1]) i++; const h=dx[i], t=Math.min(1,Math.max(0,(x-xs[i])/h)), t2=t*t, t3=t2*t;
+      tbl[j]=(2*t3-3*t2+1)*ys[i]+(t3-2*t2+t)*h*m[i]+(-2*t3+3*t2)*ys[i+1]+(t3-t2)*h*m[i+1]; }
+    return L=>{ const j=L<=0?0:L>=100?1000:L*10; const j0=j|0, f=j-j0; return j0>=1000?tbl[1000]:tbl[j0]*(1-f)+tbl[j0+1]*f; };
+  }
+
+  // 3D LUT: 이 사진의 측정값 -> 고른 디카 색감 목표값
+  const lutCache={key:null,lut:null}; const N=33;
+  function buildLUT(P){
+    const key=[lookKey,P.strength,P.skin,P.blow,P.temp,P.sat,P.flash].join('|');
+    if(lutCache.key===key && lutCache.lut) return lutCache.lut;
+    const T=P.profile?PROFILES[P.profile]:null, I=inStats, s=T?P.strength:0, ss=T?P.skin*Math.min(1,P.strength/0.8):0;
+    let tp=T?T.pct.slice():I.pct.slice(), st=T?s*P.toneW:0;
+    // 플래시를 켜면 밝기 분포를 실제 플래시 디카 작례(57장) 쪽으로
+    if(P.flash>0 && P.profile!=='flash'){ const F=PROFILES.flash.pct; if(!T){ tp=I.pct.slice(); st=1; } tp=tp.map((v,i)=>v+P.flash*0.6*(F[i]-v)); }
+    let xs=[0], ys=[0];
+    xs.push(...I.pct); ys.push(...I.pct.map((x,i)=>{ let d=st*(tp[i]-x); d=Math.max(-16,Math.min(16,d)); return x+d; }));
+    xs.push(100); ys.push(100);
+    ys[0]= st*Math.max(0,tp[0]-I.pct[0])*0.6;
+    ys[7]+=P.blow*(100-ys[7])*0.65; ys[6]+=P.blow*(100-ys[6])*0.3; ys[5]+=P.blow*(100-ys[5])*0.1;
+    for(let i=1;i<xs.length;i++){ if(xs[i]<=xs[i-1]+0.5) xs[i]=xs[i-1]+0.5; if(ys[i]<=ys[i-1]+0.3) ys[i]=Math.min(100,ys[i-1]+0.3); }
+    xs[xs.length-1]=Math.max(xs[xs.length-1],100);
+    const tone=monoCurve(xs,ys);
+    const centers=[17.5,52.5,85], sig=15;
+    const bandXf=(L,a,b)=>{ if(!T) return [a,b]; let wsum=0, na=0, nb=0;
+      for(let i=0;i<3;i++){ const w=Math.exp(-((L-centers[i])**2)/(2*sig*sig)); const ib=I.bands[i], tb=T.bands[i];
+        const valid=ib.n>0; const ia=valid?ib.a:a, ibb=valid?ib.b:b, iC=valid?Math.max(2,ib.C):Math.hypot(a,b)+2;
+        const k=Math.max(0.45,Math.min(1.6,tb.C/iC)); na+=w*(tb.a+(a-ia)*k); nb+=w*(tb.b+(b-ibb)*k); wsum+=w; }
+      na/=wsum; nb/=wsum; let da=s*(na-a), db=s*(nb-b); const lim=14; da=Math.max(-lim,Math.min(lim,da)); db=Math.max(-lim,Math.min(lim,db)); return [a+da,b+db]; };
+    let sk=null;
+    if(T && I.skin.n>0 && I.skin.frac>0.01){ const [pa,pb]=bandXf(I.skin.L,I.skin.a,I.skin.b); sk={L:I.skin.L,a:I.skin.a,b:I.skin.b, da:T.skin.a-pa, db:T.skin.b-pb, dL:T.skin.L-tone(I.skin.L)}; }
+    const lr=v=>{v/=255; return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+    const lut=new Uint8ClampedArray(N*N*N*3); let p=0;
+    for(let bi=0;bi<N;bi++) for(let gi=0;gi<N;gi++) for(let ri=0;ri<N;ri++){
+      let [L,a,b]=rgbf2lab(lr(ri*255/(N-1)),lr(gi*255/(N-1)),lr(bi*255/(N-1)));
+      let L2=tone(L); let [a2,b2]=bandXf(L,a,b);
+      if(sk && ss>0){ const w=Math.exp(-(((a-sk.a)**2+(b-sk.b)**2)/(2*14*14)) - ((L-sk.L)**2)/(2*26*26)); a2+=ss*w*sk.da; b2+=ss*w*sk.db; L2+=ss*w*Math.max(-8,Math.min(8,sk.dL))*0.6; }
+      if(P.temp){ b2+=P.temp*8; a2+=P.temp*1.2; }
+      if(P.sat){ a2*=1+P.sat; b2*=1+P.sat; }
+      if(L2>88){ const k=1-Math.min(1,(L2-88)/12)*(0.4+0.5*P.blow); a2*=k; b2*=k; }
+      const o=lab2rgb(Math.max(0,Math.min(100,L2)),a2,b2); lut[p++]=o[0]; lut[p++]=o[1]; lut[p++]=o[2];
+    }
+    lutCache.key=key; lutCache.lut=lut; return lut;
+  }
+
+  function blurCopy(src,factor){ const w=src.width,h=src.height, sw=Math.max(2,Math.round(w/factor)), sh=Math.max(2,Math.round(h/factor));
+    const a=document.createElement('canvas'); a.width=sw; a.height=sh; const ac=a.getContext('2d'); ac.imageSmoothingQuality='high'; ac.drawImage(src,0,0,sw,sh);
+    const b=document.createElement('canvas'); b.width=w; b.height=h; const bc=b.getContext('2d',{willReadFrequently:true}); bc.imageSmoothingEnabled=true; bc.imageSmoothingQuality='high'; bc.drawImage(a,0,0,w,h);
+    return bc.getImageData(0,0,w,h).data; }
+  function blurSmooth(src,factor){ const w=src.width,h=src.height; let cur=src, cw=w, ch=h; const steps=[];
+    while(cw/2>=w/factor && cw>8){ cw=Math.round(cw/2); ch=Math.round(ch/2); const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,cw,ch); cur=c; steps.push([cw,ch]); }
+    for(let i=steps.length-2;i>=-1;i--){ const [tw,th]=i>=0?steps[i]:[w,h]; const c=document.createElement('canvas'); c.width=tw; c.height=th; const x=c.getContext('2d',{willReadFrequently:i<0}); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,tw,th); cur=c; }
+    return cur.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data; }
+
+  // ---------- 인물 인식 (배경 흐림용, 처음 한 번 인터넷으로 모델 받음) ----------
+  let segmenter=null, segLoading=null, maskCanvas=null, segFailed=false, segBusy=false, bokehMsg='';
+  const setBokehStatus=t=>{ bokehMsg=t; const el=$('bokehStatus'); if(el&&t) el.textContent=t; };
+  async function ensureSegmenter(){ if(segmenter) return segmenter; if(segLoading) return segLoading;
+    segLoading=(async()=>{ const V='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+      const vision=await import(V+'/vision_bundle.mjs'); const files=await vision.FilesetResolver.forVisionTasks(V+'/wasm');
+      segmenter=await vision.ImageSegmenter.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite',delegate:'CPU'},runningMode:'IMAGE',outputCategoryMask:false,outputConfidenceMasks:true});
+      return segmenter; })();
+    return segLoading; }
+  async function buildMask(){ const src=previewSrc; if(!src||segBusy) return; segBusy=true; setBokehStatus('인물 인식 중...');
+    try{ const seg=await ensureSegmenter(); const r=seg.segment(src); const bgm=r.confidenceMasks[0]; const w=bgm.width,h=bgm.height, arr=bgm.getAsFloat32Array();
+      const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); const id=x.createImageData(w,h);
+      for(let i=0;i<w*h;i++){ let p=1-arr[i]; p=p<0.3?0:p>0.7?1:(p-0.3)/0.4; const v=p*255; id.data[i*4]=v; id.data[i*4+1]=v; id.data[i*4+2]=v; id.data[i*4+3]=255; }
+      x.putImageData(id,0,0); r.confidenceMasks.forEach(m=>m.close&&m.close());
+      const f=document.createElement('canvas'); f.width=w; f.height=h; const fx=f.getContext('2d'); fx.filter='blur('+Math.max(1,Math.round(Math.max(w,h)/400))+'px)'; fx.drawImage(c,0,0);
+      if(src===previewSrc){ maskCanvas=f; setBokehStatus('인물 인식 완료: 배경만 흐려요'); }
+    }catch(e){ segFailed=true; console.warn(e); setBokehStatus('인물 인식을 못 해서 ⚡ 위치 기준으로 흐려요 (인터넷 연결 필요)'); }
+    segBusy=false; schedule(); }
+  function getMaskData(w,h,C){ const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d',{willReadFrequently:true});
+    if(maskCanvas){ x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(maskCanvas,0,0,w,h); }
+    else { const r=Math.max(w,h)*0.42; const g=x.createRadialGradient(C.x*w,C.y*h,0,C.x*w,C.y*h,r); g.addColorStop(0,'#fff'); g.addColorStop(0.5,'#fff'); g.addColorStop(1,'#000'); x.fillStyle='#000'; x.fillRect(0,0,w,h); x.fillStyle=g; x.fillRect(0,0,w,h); }
+    return x.getImageData(0,0,w,h).data; }
+
+  function processImage(srcCanvas,P,C,O){
+    const w=srcCanvas.width,h=srcCanvas.height; let work=srcCanvas;
+    if(O.soft){ const f=Math.max(1.6,Math.max(w,h)/1100); const s=document.createElement('canvas'); s.width=Math.round(w/f); s.height=Math.round(h/f); s.getContext('2d').drawImage(srcCanvas,0,0,s.width,s.height);
+      const u=document.createElement('canvas'); u.width=w; u.height=h; const uc=u.getContext('2d'); uc.imageSmoothingEnabled=true; uc.drawImage(s,0,0,w,h); work=u; }
+    const d=work.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
+    const bS=P.sharp>0?blurCopy(work,2.2):null;
+    const lut=buildLUT(P); const NM=N-1, sc=NM/255;
+    const diag=Math.hypot(w,h), sigma=(0.06+P.radius*0.30)*diag, inv2s2=1/(2*sigma*sigma), cx=C.x*w, cy=C.y*h;
+    const flash=P.flash, bg=P.bg, sharp=P.sharp*1.3, evg=Math.pow(2,P.ev*2), useLin=flash>0||bg>0||P.ev!==0;
+    const out=new ImageData(w,h), o=out.data;
+    for(let y=0;y<h;y++){ const dy=(y-cy)*0.8, dy2=dy*dy;
+      for(let x=0;x<w;x++){ const i=(y*w+x)*4;
+        let r=d[i],g=d[i+1],b=d[i+2];
+        if(bS){ r+=(r-bS[i])*sharp; g+=(g-bS[i+1])*sharp; b+=(b-bS[i+2])*sharp; r=r<0?0:r>255?255:r; g=g<0?0:g>255?255:g; b=b<0?0:b>255?255:b; }
+        if(useLin){ const dx=x-cx, f=Math.exp(-(dx*dx+dy2)*inv2s2), nf=1-f;
+          const gain=evg*(1+flash*1.1*f)*(1-bg*0.9*Math.pow(nf,0.7)), fill=flash*0.008*f;
+          let lr=toLin[r|0]*gain+fill, lg=toLin[g|0]*gain+fill, lb=toLin[b|0]*gain+fill*1.04;
+          lr=lr>1?1:lr; lg=lg>1?1:lg; lb=lb>1?1:lb; r=toSrgb[(lr*LUTN)|0]; g=toSrgb[(lg*LUTN)|0]; b=toSrgb[(lb*LUTN)|0]; }
+        const fr=r*sc, fg=g*sc, fb=b*sc; let r0=fr|0, g0=fg|0, b0=fb|0; if(r0>=NM) r0=NM-1; if(g0>=NM) g0=NM-1; if(b0>=NM) b0=NM-1;
+        const tr=fr-r0, tg=fg-g0, tb=fb-b0;
+        const i000=((b0*N+g0)*N+r0)*3, i100=i000+3, i010=i000+N*3, i110=i010+3, i001=i000+N*N*3, i101=i001+3, i011=i001+N*3, i111=i011+3;
+        for(let c=0;c<3;c++){
+          const c00=lut[i000+c]+(lut[i100+c]-lut[i000+c])*tr, c10=lut[i010+c]+(lut[i110+c]-lut[i010+c])*tr;
+          const c01=lut[i001+c]+(lut[i101+c]-lut[i001+c])*tr, c11=lut[i011+c]+(lut[i111+c]-lut[i011+c])*tr;
+          const c0=c00+(c10-c00)*tg, c1=c01+(c11-c01)*tg; o[i+c]=c0+(c1-c0)*tb; }
+        o[i+3]=255;
+      }
+    }
+    if(P.bokeh>0){
+      const md=getMaskData(w,h,C);
+      const bgc=document.createElement('canvas'); bgc.width=w; bgc.height=h; const bgx=bgc.getContext('2d'); const bid=bgx.createImageData(w,h);
+      const wc=document.createElement('canvas'); wc.width=w; wc.height=h; const wx=wc.getContext('2d'); const wid=wx.createImageData(w,h);
+      for(let i=0;i<o.length;i+=4){ const k=1-md[i]/255; bid.data[i]=o[i]*k; bid.data[i+1]=o[i+1]*k; bid.data[i+2]=o[i+2]*k; bid.data[i+3]=255; wid.data[i]=k*255; wid.data[i+3]=255; }
+      bgx.putImageData(bid,0,0); wx.putImageData(wid,0,0);
+      const factor=Math.max(2,P.bokeh*Math.max(w,h)/45);
+      const bb=blurSmooth(bgc,factor), wb=blurSmooth(wc,factor);
+      for(let i=0;i<o.length;i+=4){ const m=md[i]/255; if(m>=0.999) continue; const ww=wb[i]/255;
+        let R=o[i],G=o[i+1],B=o[i+2]; if(ww>0.03){ R=bb[i]/ww; G=bb[i+1]/ww; B=bb[i+2]/ww; }
+        o[i]=o[i]*m+R*(1-m); o[i+1]=o[i+1]*m+G*(1-m); o[i+2]=o[i+2]*m+B*(1-m); }
+    }
+    const res=document.createElement('canvas'); res.width=w; res.height=h; const rc=res.getContext('2d',{willReadFrequently:true}); rc.putImageData(out,0,0);
+    const glow=P.glow, mist=P.mist, vig=P.vig, grain=P.grain;
+    if(glow>0||mist>0||vig>0||grain>0){
+      const bl=(glow>0||mist>0)?blurCopy(res,Math.max(10,Math.max(w,h)/70)):null;
+      const vcx=w/2,vcy=h/2,vr=1/Math.hypot(w/2,h/2); let seed=987654321;
+      for(let y=0;y<h;y++){ const vy=y-vcy; for(let x=0;x<w;x++){ const i=(y*w+x)*4; let R=o[i],G=o[i+1],B=o[i+2];
+        if(bl){
+          if(glow>0){ const lum=(0.2126*bl[i]+0.7152*bl[i+1]+0.0722*bl[i+2])/255; let hl=(lum-0.55)/0.4; if(hl>0){ if(hl>1)hl=1; const k=hl*hl*glow*0.7;
+            R=255-(255-R)*(1-k*bl[i]/255*1.02); G=255-(255-G)*(1-k*bl[i+1]/255); B=255-(255-B)*(1-k*bl[i+2]/255*0.97); } }
+          if(mist>0){ const k=mist*0.4; R+=(bl[i]-R)*k; G+=(bl[i+1]-G)*k; B+=(bl[i+2]-B)*k; const lift=mist*16; R+=lift*(1-R/255); G+=lift*(1-G/255); B+=lift*(1-B/255); }
+        }
+        if(vig>0){ const vx=x-vcx, vd=Math.sqrt(vx*vx+vy*vy)*vr, vv=1-vig*0.55*vd*vd*vd; R*=vv; G*=vv; B*=vv; }
+        if(grain>0){ seed=(seed*1664525+1013904223)>>>0; const n1=seed/4294967296-0.5; seed=(seed*1664525+1013904223)>>>0; const n2=seed/4294967296-0.5;
+          const L=(0.299*R+0.587*G+0.114*B)/255, amp=grain*24*(0.45+0.55*(1-L));
+          R+=n1*amp+n2*amp*0.35*(1-L); G+=n1*amp; B+=n1*amp-n2*amp*0.35*(1-L); }
+        o[i]=R; o[i+1]=G; o[i+2]=B; } }
+      rc.putImageData(out,0,0);
+    }
+    if(O.stamp) drawStamp(rc,w,h,O);
+    return res;
+  }
+
+  // 7세그먼트 느낌 날짜 스탬프 (주황/노랑, 세로 사진은 세로로도)
+  function drawStamp(ctx,w,h,O){ const [Y,M,D]=(dateVal||new Date().toISOString().slice(0,10)).split('-');
+    const now=new Date(), hh=String(now.getHours()).padStart(2,'0'), mm=String(now.getMinutes()).padStart(2,'0');
+    const f=O.stampFmt; const text=f==='quote'?`'${Y.slice(2)} ${M} ${D}`:f==='dot'?`${Y}.${M}.${D}`:f==='time'?`${Y}/${M}/${D} ${hh}:${mm}`:`${Y}/${M}/${D}`;
+    const yellow=O.stampColor==='yellow'; const size=Math.round(Math.min(w,h)*0.05);
+    ctx.save(); ctx.font=`700 ${size}px "DS-Digital","Courier New",ui-monospace,monospace`; ctx.textBaseline='bottom';
+    const vertical=O.stampRot && h>w;
+    if(vertical){ ctx.translate(w-size*0.8, h-size*0.9); ctx.rotate(-Math.PI/2); ctx.textAlign='left'; }
+    else { ctx.translate(w-size*0.9, h-size*0.7); ctx.textAlign='right'; }
+    ctx.shadowColor=yellow?'rgba(255,190,0,.85)':'rgba(255,90,0,.9)'; ctx.shadowBlur=size*0.45; ctx.fillStyle=yellow?'#ffd84a':'#ff9b3d'; ctx.fillText(text,0,0);
+    ctx.shadowBlur=size*0.12; ctx.fillStyle=yellow?'#fff1a0':'#ffc07a'; ctx.fillText(text,0,0); ctx.restore(); }
+
+  $('save').onclick=async()=>{ if(!srcImg) return; $('loading').style.display='flex'; await new Promise(r=>setTimeout(r,30));
+    try{ const full=makeSrcCanvas(3200); const res=processImage(full,params,center,opts); const blob=await new Promise(r=>res.toBlob(r,'image/jpeg',0.93));
+      const name=`DIGILOOK_${LOOKS[lookKey].code.replace(/\W+/g,'')}_${Date.now()}.jpg`, file=new File([blob],name,{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})&&/Android|iPhone|iPad/i.test(navigator.userAgent)) await navigator.share({files:[file],title:'디카룩'});
+      else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+      toast('저장했어요');
+    }catch(e){ if(e.name!=='AbortError') alert('저장 중 문제가 생겼어요: '+e.message); }
+    $('loading').style.display='none'; };
+
+  renderTab(); selectLook(lookKey); loadRecipe();
+  window.__digicam={ loadFile, setLook:k=>selectLook(k), setCenter:(x,y)=>{center={x,y};schedule();}, getStats:()=>inStats, tab:t=>$('tabs').querySelector(`[data-t="${t}"]`).click(),
+    bench:()=>{ const t0=performance.now(); lutCache.key=null; buildLUT(params); const t1=performance.now(); processImage(previewSrc,params,center,opts); return {lut:t1-t0, process:performance.now()-t1}; } };
+})();
+</script>
+</body>
+</html>
